@@ -5,42 +5,41 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.svistun.twitter.dto.PersonDto;
 import com.svistun.twitter.entity.Person;
 import com.svistun.twitter.entity.Role;
-import com.svistun.twitter.service.PersonService;
+import com.svistun.twitter.filter.PersonAuthenticationFilter;
+import com.svistun.twitter.service.person.PersonService;
+import com.svistun.twitter.service.person.PersonServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.util.Arrays.stream;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-@RequiredArgsConstructor
-@RestController
-@RequestMapping("api/v1/auth")
-public class AuthController {
-    private final PersonService personService;
 
-    @GetMapping("/register")
-    public ResponseEntity<?> register() {
-        return ResponseEntity.ok().build();
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("api")
+public class AuthController {
+    private final PersonServiceImpl personService;
+
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody PersonDto personDto) {
+        return ResponseEntity.ok().body(personService.saveUser(personDto));
     }
 
     @GetMapping("/token/refresh")
@@ -53,13 +52,12 @@ public class AuthController {
                 JWTVerifier jwtVerifier = JWT.require(algorithm).build();
                 DecodedJWT decodedJWT = jwtVerifier.verify(refresh_token);
                 String username = decodedJWT.getSubject();
-                Person person = personService.gerPerson(username);
-
+                Person person = personService.getPerson(username);
                 String access_token = JWT.create()
                         .withSubject(person.getUsername())
                         .withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 100))
                         .withIssuer(request.getRequestURI())
-                        .withClaim("roles", person.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList()))
+                        .withClaim("roles", person.getRoles().stream().map((Role::eRole)).collect(Collectors.toList()))
                         .sign(algorithm);
 
                 Map<String, String> tokens = new HashMap<>();
@@ -68,8 +66,6 @@ public class AuthController {
                 new ObjectMapper().writeValue(response.getOutputStream(), tokens);
             } catch (Exception exception) {
                 response.setHeader("error", exception.getMessage());
-                response.setStatus(FORBIDDEN.value());
-                /*response.sendError(FORBIDDEN.value());*/
                 Map<String, String> error = new HashMap<>();
                 error.put("error_message", exception.getMessage());
                 response.setContentType(APPLICATION_JSON_VALUE);

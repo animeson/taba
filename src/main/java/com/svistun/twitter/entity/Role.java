@@ -21,5 +21,8 @@ public class Role {
     @Column(length = 20)
     private ERole roleName;
 
-
+    @SuppressWarnings("unchecked")
+    public <R> R eRole() {
+        return (R) roleName.name();
+    }
 }

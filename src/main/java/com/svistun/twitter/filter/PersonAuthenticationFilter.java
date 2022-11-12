@@ -3,7 +3,6 @@ package com.svistun.twitter.filter;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -17,8 +16,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,9 +24,13 @@ import java.util.stream.Collectors;
 
 public class PersonAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
+    private final String secret;
+    private final String expirationTime;
 
     public PersonAuthenticationFilter(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
+        this.secret = System.getenv("jwt.secret");
+        this.expirationTime = System.getenv("jwt.expiration");
     }
 
     @Override
@@ -41,31 +42,23 @@ public class PersonAuthenticationFilter extends UsernamePasswordAuthenticationFi
     }
 
     @Override
-
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
         User user = (User) authResult.getPrincipal();
-        Algorithm algorithm = Algorithm.HMAC256("secret");
+        Algorithm algorithm = Algorithm.HMAC256(secret);
         String access_token = JWT.create()
                 .withSubject(user.getUsername())
-                .withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 100 ))
+                .withExpiresAt(new Date(System.currentTimeMillis() + 100 * Long.parseLong(expirationTime)))
                 .withIssuer(request.getRequestURI())
                 .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
                 .sign(algorithm);
-
-
         String refresh_token = JWT.create()
                 .withSubject(user.getUsername())
-                .withExpiresAt(new Date(System.currentTimeMillis() + 30 * 60 * 100))
+                .withExpiresAt(new Date(System.currentTimeMillis() + 30 + 100 * Long.parseLong(expirationTime)))
                 .withIssuer(request.getRequestURI())
                 .sign(algorithm);
-
-
-  /*      response.setHeader("access_token", access_token);
-        response.setHeader("refresh_token", refresh_token);*/
-
         Map<String, String> tokens = new HashMap<>();
         tokens.put("access_token", access_token);
         tokens.put("refresh_token", refresh_token);
-        new ObjectMapper().writeValue(response.getOutputStream(),tokens);
+        new ObjectMapper().writeValue(response.getOutputStream(), tokens);
     }
 }
