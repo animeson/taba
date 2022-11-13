@@ -3,15 +3,15 @@ package com.svistun.twitter.entity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
-import javax.validation.constraints.*;
-import java.time.LocalDate;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
-import static javax.persistence.FetchType.*;
+import static javax.persistence.FetchType.EAGER;
 
 
 @Entity
@@ -24,7 +24,7 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotEmpty(message = "The name must not be empty")
+    @NotBlank(message = "The name must not be empty")
     @Size(min = 2, max = 100, message = "The username must be between 2 and 100 characters long")
     @Column(nullable = false, unique = true)
     private String username;
@@ -33,7 +33,7 @@ public class Person {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @NonNull
+
     @NotBlank(message = "New password is mandatory")
     @Column(nullable = false)
     private String password;

@@ -9,11 +9,17 @@ import com.svistun.twitter.entity.Role;
 import com.svistun.twitter.repository.PersonRepo;
 import com.svistun.twitter.repository.RequestToChangeUserRoleRepo;
 import com.svistun.twitter.service.role.RoleServiceImpl;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,14 +31,35 @@ import java.util.List;
 import static com.svistun.twitter.entity.ERole.ROLE_ADMIN;
 import static com.svistun.twitter.entity.ERole.ROLE_USER;
 
-@RequiredArgsConstructor
 @Service
 @Log4j2
-public class PersonServiceImpl implements PersonService {
+public class PersonServiceImpl implements PersonService, UserDetailsService {
     private final PersonRepo personRepo;
     private final RoleServiceImpl roleService;
     private final RequestToChangeUserRoleRepo requestToChangeUserRoleRepo;
-    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final PasswordEncoder passwordEncoder;
+
+    public PersonServiceImpl(PersonRepo personRepo, RoleServiceImpl roleService,
+                             RequestToChangeUserRoleRepo requestToChangeUserRoleRepo,
+                             @Lazy PasswordEncoder passwordEncoder) {
+        this.personRepo = personRepo;
+        this.roleService = roleService;
+        this.requestToChangeUserRoleRepo = requestToChangeUserRoleRepo;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Person person = personRepo.findByUsername(username);
+        if (person == null) {
+            throw new UsernameNotFoundException("User not found exception");
+        }
+        Collection<GrantedAuthority> authorities = new ArrayList<>();
+        person.getRoles().forEach(role ->
+                authorities.add(new SimpleGrantedAuthority(role.getRoleName().name())));
+        return new User(person.getUsername(), person.getPassword(), authorities);
+    }
 
 
     @Override
@@ -47,7 +74,7 @@ public class PersonServiceImpl implements PersonService {
         Person person = new Person();
         BeanUtils.copyProperties(personDto, person);
         person.setRegistrationDate(LocalDateTime.now());
-        person.setPassword(bCryptPasswordEncoder.encode(personDto.getPassword()));
+        person.setPassword(passwordEncoder.encode(personDto.getPassword()));
         person.setRoles(roles);
         return personRepo.save(person);
     }
@@ -62,7 +89,7 @@ public class PersonServiceImpl implements PersonService {
     public void editPerson(PersonDto personDto, Authentication authentication) {
         Person person = personRepo.findByUsername(authentication.getName());
         BeanUtils.copyProperties(personDto, person);
-        person.setPassword(bCryptPasswordEncoder.encode(personDto.getPassword()));
+        person.setPassword(passwordEncoder.encode(personDto.getPassword()));
         personRepo.save(person);
     }
 
