@@ -1,11 +1,15 @@
 package com.svistun.twitter.controller;
 
+import com.svistun.twitter.dto.CreatePostDto;
 import com.svistun.twitter.dto.PostDto;
-import com.svistun.twitter.entity.Post;
-import com.svistun.twitter.service.post.PostServiceImpl;
+import com.svistun.twitter.facade.post.PostFacadeImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,16 +18,40 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("api/v1/post")
 public class PostController {
-    private final PostServiceImpl postService;
+    private final PostFacadeImpl postFacade;
+
+
+
 
     @GetMapping("/{username}")
-    public ResponseEntity<List<Post>> getPost(@PathVariable String username) {
-        return ResponseEntity.ok().body(postService.getPost(username));
+    public ResponseEntity<List<PostDto>> getPost(@PathVariable String username,
+                                                 @PageableDefault(size = 5)
+                                                 @SortDefault(sort = "creationTime", direction = Sort.Direction.DESC)
+                                                 Pageable pageable) {
+        return ResponseEntity.ok().body(postFacade.findAllPostByUsername(username,pageable));
     }
+
+    @GetMapping
+    public ResponseEntity<List<PostDto>> myPost(Authentication authentication,
+                                                @PageableDefault(size = 5)
+                                                @SortDefault(sort = "creationTime", direction = Sort.Direction.DESC)
+                                                Pageable pageable) {
+        return ResponseEntity.ok().body(postFacade.findAllPostByEmail(authentication.getName(), pageable));
+    }
+
 
 
     @PostMapping
-    public ResponseEntity<Post> addPost(@RequestBody PostDto postDto, Authentication authentication) {
-        return ResponseEntity.ok().body(postService.savePost(postDto,authentication));
+    public ResponseEntity<PostDto> addPost(@RequestBody CreatePostDto postDto, Authentication authentication) {
+        return ResponseEntity.ok().body(postFacade.savePost(postDto, authentication));
     }
+
+
+/*
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePostById(@PathVariable Long id, Authentication authentication) {
+        postFacade.deletePostById(id, authentication);
+        return ResponseEntity.ok().build();
+    }*/
+
 }

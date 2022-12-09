@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
 
 import static javax.persistence.FetchType.EAGER;
+import static javax.persistence.FetchType.LAZY;
 
 @Entity
 @Table
@@ -33,4 +33,7 @@ public class Post {
     @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "person_id")
     private Person person;
+
+    @OneToMany(fetch = LAZY, cascade = CascadeType.ALL)
+    private List<Comment> comments;
 }

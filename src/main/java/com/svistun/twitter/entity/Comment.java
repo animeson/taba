@@ -5,28 +5,25 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
-import java.util.Collection;
+import static javax.persistence.FetchType.LAZY;
 
-import static javax.persistence.FetchType.EAGER;
-
+@Entity
 @Table
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-public class RequestToChangeUserRole {
+public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String comment;
+    private LocalDateTime dataTimeCreateComment;
 
-    @ManyToOne(fetch = EAGER)
+    @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
 
-    @ManyToOne(fetch = EAGER)
-    @JoinColumn(name = "role_id")
-    private Role role;
 
-    private Boolean status;
 }

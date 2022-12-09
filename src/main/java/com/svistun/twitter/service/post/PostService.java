@@ -1,12 +1,16 @@
 package com.svistun.twitter.service.post;
 
-import com.svistun.twitter.dto.PostDto;
 import com.svistun.twitter.entity.Post;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
 
-import java.util.List;
-
+@Service
 public interface PostService {
-    Post savePost(PostDto postDto, Authentication authentication);
-    List<Post> getPost(String username);
+    void savePost(Post post);
+
+    Page<Post> findAllPostByUsername(String username, Pageable pageable);
+    Page<Post> findAllPostByEmail(String email, Pageable pageable);
+    void deletePostById(Long id, Authentication authentication);
 }

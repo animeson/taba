@@ -16,7 +16,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -43,7 +42,7 @@ public class PersonAuthenticationFilter extends UsernamePasswordAuthenticationFi
         } catch (IOException e) {
             throw new UsernameNotFoundException("User notFoundException");
         }
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(personLoginDto.getUsername(), personLoginDto.getPassword());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(personLoginDto.getEmail(), personLoginDto.getPassword());
         return authenticationManager.authenticate(authenticationToken);
     }
 
@@ -51,7 +50,7 @@ public class PersonAuthenticationFilter extends UsernamePasswordAuthenticationFi
     protected void successfulAuthentication(HttpServletRequest request,
                                             HttpServletResponse response,
                                             FilterChain chain,
-                                            Authentication authResult) throws IOException, ServletException {
+                                            Authentication authResult) throws IOException {
         User user = (User) authResult.getPrincipal();
         List<String> roles = user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
 
@@ -65,20 +64,20 @@ public class PersonAuthenticationFilter extends UsernamePasswordAuthenticationFi
     }
 
 
-    public static String generatorAccessToken(HttpServletRequest request, String username, List<String> role) {
+    public static String generatorAccessToken(HttpServletRequest request, String email, List<String> role) {
 
-        return generatorToken(request, username, role, System.currentTimeMillis() + 1000 * Long.parseLong(expirationTime));
+        return generatorToken(request, email, role, System.currentTimeMillis() + 1000 * Long.parseLong(expirationTime));
     }
 
-    public static String generatorRefreshToken(HttpServletRequest request, String username, List<String> role) {
-        return generatorToken(request, username, role, System.currentTimeMillis() + 30 * 1000 * Long.parseLong(expirationTime));
+    public static String generatorRefreshToken(HttpServletRequest request, String email, List<String> role) {
+        return generatorToken(request, email, role, System.currentTimeMillis() + 30 * 1000 * Long.parseLong(expirationTime));
     }
 
-    public static String generatorToken(@NotNull HttpServletRequest request, String username, List<String> roles, Long expiration) {
+    public static String generatorToken(@NotNull HttpServletRequest request, String email, List<String> roles, Long expiration) {
         Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
 
         return JWT.create()
-                .withSubject(username)
+                .withSubject(email)
                 .withExpiresAt(new Date(expiration))
                 .withIssuer(request.getRequestURI())
                 .withClaim("roles", roles)

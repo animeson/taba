@@ -1,42 +1,36 @@
 package com.svistun.twitter.controller;
 
 import com.svistun.twitter.dto.PersonDto;
-import com.svistun.twitter.dto.RoleDto;
 import com.svistun.twitter.entity.Person;
-import com.svistun.twitter.service.person.PersonServiceImpl;
+import com.svistun.twitter.facade.person.PersonFacadeImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/user")
 public class PersonController {
-    private final PersonServiceImpl personService;
+    private final PersonFacadeImpl personFacade;
 
     @GetMapping
     public ResponseEntity<Person> getUser(Authentication authentication) {
-        return ResponseEntity.ok().body(personService.getPerson(authentication.getName()));
+        return ResponseEntity.ok().body(personFacade.findPersonByEmail(authentication.getName()));
     }
 
-    @PatchMapping
-    public ResponseEntity<Person> editPerson(
-            @RequestBody PersonDto personDto, Authentication authentication) {
-        personService.editPerson(personDto, authentication);
-        return ResponseEntity.ok().build();
+    @GetMapping("/{username}")
+    public ResponseEntity<PersonDto> getPersonByUsername(@PathVariable String username){
+        return ResponseEntity.ok().body(personFacade.transactionFromEntityToDTO(username));
     }
 
-    @PostMapping("/role/edit")
-    public ResponseEntity<Person> editPersonRole(
-            @RequestBody RoleDto roleDto, Authentication authentication) {
-        personService.addRequestToChangeUserRole(authentication, roleDto);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/role")
-    public ResponseEntity<?> personRequestRole(Authentication authentication) {
-        return ResponseEntity.ok().body(personService.personRequestRole(authentication));
-    }
+/*    @PatchMapping
+    public ResponseEntity<PersonDto> editPerson(
+            @RequestBody CreatePersonDto personDto, Authentication authentication) {
+        return ResponseEntity.ok().body(personFacade.editPerson(personDto, authentication));
+    }*/
 
 }

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface RoleService {
-    void saveRole(ERole role);
+    Role saveRole(Role role);
     Role findByRoleName(ERole roleName);
     Boolean existsByRoleName(ERole roleName);
 
