@@ -8,6 +8,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
@@ -23,22 +24,25 @@ public class Person {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private String lastName;
+    private String firstName;
+    private String phone;
+    private String address;
+    /*private Photo photoPerson;*/
+    private Boolean gender;
+    private String bio;
     @NotBlank(message = "The name must not be empty")
     @Size(min = 2, max = 100, message = "The username must be between 2 and 100 characters long")
     @Column(nullable = false, unique = true)
     private String username;
-
     @Email(message = "E-mail should not be empty")
     @Column(unique = true, nullable = false)
     private String email;
-
-
     @NotBlank(message = "New password is mandatory")
     @Column(nullable = false)
     private String password;
-
-    private LocalDateTime registrationDate;
+    private LocalDateTime doRegistration;
+    private LocalDate doBirth;
 
     @ManyToMany(fetch = EAGER)
     private Collection<Role> roles;

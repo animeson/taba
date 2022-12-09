@@ -23,44 +23,41 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 public class PersonAuthorizationFilter extends OncePerRequestFilter {
     private final static String secret = System.getenv("jwt.secret");
-
-
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response,
                                     @NotNull FilterChain filterChain) throws ServletException, IOException {
-        if (request.getServletPath().equals("/api/v1/login") || request.getServletPath().equals("/api/v1/login/refresh")) {
-            filterChain.doFilter(request, response);
-        } else {
-            String authorizationHeader = request.getHeader(AUTHORIZATION);
-            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                try {
-                    String token = authorizationHeader.substring(7);
-                    DecodedJWT decodedJWT =  verifyToken(token);
-
-                    String username = decodedJWT.getSubject();
-                    String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
-                    Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-
-                    stream(roles).forEach(role -> {
-                        authorities.add(new SimpleGrantedAuthority(role));
-                    });
-                    UsernamePasswordAuthenticationToken authenticationToken =
-                            new UsernamePasswordAuthenticationToken(username, null, authorities);
-                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                    filterChain.doFilter(request, response);
-                } catch (IOException exception) {
-                    throw new RuntimeException("Can't write response");
-                }
-            } else {
+            if (request.getServletPath().equals("/api/v1/login") || request.getServletPath().equals("/api/v1/refresh")) {
                 filterChain.doFilter(request, response);
+            } else {
+                String authorizationHeader = request.getHeader(AUTHORIZATION);
+                if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                    try {
+                        String token = authorizationHeader.substring(7);
+                        DecodedJWT decodedJWT = verifyToken(token);
+
+                        String email = decodedJWT.getSubject();
+                        String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
+                        Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+                        stream(roles).forEach(role -> {
+                            authorities.add(new SimpleGrantedAuthority(role));
+                        });
+                        UsernamePasswordAuthenticationToken authenticationToken =
+                                new UsernamePasswordAuthenticationToken(email, null, authorities);
+                        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                        filterChain.doFilter(request, response);
+                    } catch (IOException exception) {
+                        throw new RuntimeException("Can't write response");
+                    }
+                } else {
+                    filterChain.doFilter(request, response);
+                }
             }
-        }
     }
 
-    public static DecodedJWT verifyToken(String token) {
+    public static DecodedJWT verifyToken (String token){
         Algorithm algorithm = Algorithm.HMAC256(secret.getBytes());
         JWTVerifier jwtVerifier = JWT.require(algorithm).build();
         return jwtVerifier.verify(token);
     }
-
 }

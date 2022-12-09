@@ -32,12 +32,6 @@ public class SecurityConfig {
 
         auth.userDetailsService(personService).passwordEncoder(encoder);
     }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return encoder;
-    }
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         PersonAuthenticationFilter personAuthenticationFilter =
@@ -51,8 +45,13 @@ public class SecurityConfig {
                 .authorizeRequests((auth) -> {
                             try {
                                 auth
-                                        .antMatchers("/api/v1/login/**")
+                                        .antMatchers("/api/v1/login/**", "/api/v1/register/**", "/api/v1/token/refresh/**")
                                         .permitAll()
+                                        .and()
+                                        .authorizeRequests()
+                                        .antMatchers("api/v1/user/**","/api/v1/post/**")
+                                        .hasAnyAuthority("ROLE_USER","ROLE_ADMIN")
+                                        .antMatchers( "/api/v1/admin/**").hasAnyAuthority("ROLE_ADMIN")
                                         .anyRequest()
                                         .authenticated()
                                         .and()
@@ -67,6 +66,11 @@ public class SecurityConfig {
                 )
                 .httpBasic(Customizer.withDefaults());
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return encoder;
     }
 
 }

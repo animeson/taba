@@ -15,16 +15,8 @@ public class RoleServiceImpl implements RoleService{
     private final RoleRepo roleRepo;
     @Override
     @Transactional
-    public void saveRole(ERole role) {
-        if (!roleRepo.existsByRoleName(role)) {
-            if (role.equals(ERole.ROLE_USER)) {
-                roleRepo.save(new Role(null, role));
-            } else {
-                log.warn("Incorrect role data");
-            }
-        } else {
-            log.warn("We already have such a role.");
-        }
+    public Role saveRole(Role role) {
+       return roleRepo.save(role);
     }
 
     @Override
